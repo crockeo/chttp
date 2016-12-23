@@ -6,6 +6,8 @@ set(LIBRARY_OUTPUT_PATH "${PROJECT_SOURCE_DIR}/out")
 
 set(CHTTP_SOURCES
   src/headers.c
+  src/parse.c
+  src/print.c
 )
 
 add_library(chttp ${CHTTP_SOURCES})

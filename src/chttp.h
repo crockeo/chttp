@@ -1,6 +1,8 @@
 #ifndef _CHTTP_HTTP_H_
 #define _CHTTP_HTTP_H_
 
+#include <stdio.h>
+
 // Representing an HTTP header.
 typedef struct
 {
@@ -71,5 +73,36 @@ typedef struct
 
 // Allocating the space for a chttp_response.
 chttp_response *chttp_response_allocate();
+
+// Parsing a chttp_request from a given string. Returns the number of characters
+// read on success. Returns -1 on failure. Inverse of chttp_sprint_request.
+int chttp_parse_request(chttp_request *r, const char *string, int len);
+
+// Parsing a chttp_response from a given string. Returns the number of
+// characters read on success. Returns -1 on failure. Inverse of
+// chttp_sprint_response.
+int chttp_parse_response(chttp_response *r, const char *string, int len);
+
+// Printing a chttp_request to a given string. Returns the number of characters
+// printed if there is enough room. If not, it returns -1. Inverse of
+// chttp_parse_request.
+int chttp_sprint_request(chttp_request *r, char *string, int len);
+
+// Printing a chttp_response to a given string. Returns the number of characters
+// printed if there is enough room. If not, it returns -1. Inverse of
+// chttp_arse_response.
+int chttp_sprint_response(chttp_response *r, char *string, int len);
+
+// Printing a chttp_request to FILE *f.
+void chttp_fprint_request(FILE *f, chttp_request *r);
+
+// Printing a chttp_response to FILE *f.
+void chttp_fprint_response(FILE *f, chttp_response *r);
+
+// Printing a chttp_request to stdout.
+void chttp_print_request(chttp_request *r);
+
+// Printing a chttp_response to stdout.
+void chttp_print_response(chttp_response *r);
 
 #endif
