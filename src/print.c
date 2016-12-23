@@ -22,13 +22,38 @@ int chttp_sprint_method(chttp_method method, char *str, int len)
     return (int)(stpcpy(str, method_str) - str);
 }
 
+// Utility for printing iteratively into a string.
+static int chttp_sprint(char *dst, int len, const char *format, int *n, ...)
+{
+    va_list arg_list;
+    int v = snprintf(dst + *n, len, format, arg_list);
+    if (v > len - *n)
+        return 1;
+    *n += v;
+    return 0;
+}
+
 // Printing a chttp_request to a given string. Returns the number of characters
 // printed if there is enough room. If not, it returns -1. Inverse of
 // chttp_parse_request.
 int chttp_sprint_request(chttp_request *r, char *string, int len)
 {
-    // TODO
-    return -1;
+    char method[chttp_method_strlen];
+    chttp_sprint_method(r->method, method, chttp_method_strlen);
+
+    int n = 0;
+    if (chttp_sprint(string, len, "%s %s %s\n", &n, method, r->uri, r->http_version))
+        return -1;
+    for (int i = 0; i < r->headers->len; i++)
+        if (chttp_sprint(string, len, "%s: %s\n", &n, r->headers->headers[i]->header, r->headers->headers[i]->value))
+            return -1;
+    if (chttp_sprint(string, len, "%s\n", &n, r->body))
+        return -1;
+
+    if (n == len)
+        return -1;
+    string[n] = '\0';
+    return n + 1;
 }
 
 // Printing a chttp_response to a given string. Returns the number of characters
@@ -36,8 +61,19 @@ int chttp_sprint_request(chttp_request *r, char *string, int len)
 // chttp_arse_response.
 int chttp_sprint_response(chttp_response *r, char *string, int len)
 {
-    // TODO
-    return -1;
+    int n = 0;
+    if (chttp_sprint(string, len, "%s %d %s\n", &n, r->http_version, r->code, r->reason_phrase))
+        return -1;
+    for (int i = 0; i < r->headers->len; i++)
+        if (chttp_sprint(string, len, "%s: %s\n", &n, r->headers->headers[i]->header, r->headers->headers[i]->value))
+            return -1;
+    if (chttp_sprint(string, len, "%s\n", &n, r->body))
+        return -1;
+
+    if (n == len)
+        return -1;
+    string[n] = '\0';
+    return n + 1;
 }
 
 // Printing a chttp_request to FILE *f.
