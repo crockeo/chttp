@@ -44,6 +44,11 @@ typedef enum
     OTHER
 } chttp_method;
 
+const int chttp_method_strlen = 8;
+
+// Printing a method to a string.
+int chttp_sprint_method(chttp_method method, char *str, int len);
+
 // Representing a request from a client.
 typedef struct
 {
