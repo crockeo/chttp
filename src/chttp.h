@@ -81,12 +81,18 @@ chttp_response *chttp_response_allocate();
 
 // Parsing a chttp_request from a given string. Returns the number of characters
 // read on success. Returns -1 on failure. Inverse of chttp_sprint_request.
-int chttp_parse_request(chttp_request *r, const char *string, int len);
+int chttp_parse_request(chttp_request *r, FILE *f);
 
 // Parsing a chttp_response from a given string. Returns the number of
 // characters read on success. Returns -1 on failure. Inverse of
 // chttp_sprint_response.
-int chttp_parse_response(chttp_response *r, const char *string, int len);
+int chttp_parse_response(chttp_response *r, FILE *f);
+
+// Pipes string to a FILE * and calls chttp_parse_request.
+int chttp_sparse_request(chttp_request *r, const char *string, int len);
+
+// Pipes string to a FILE * and falls chttp_parse_response.
+int chttp_sparse_response(chttp_response *r, const char *string, int len);
 
 // Printing a chttp_request to a given string. Returns the number of characters
 // printed if there is enough room. If not, it returns -1. Inverse of
