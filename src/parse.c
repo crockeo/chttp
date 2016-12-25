@@ -14,7 +14,7 @@ struct mem_region
 };
 typedef struct mem_region mem_region_t;
 
-int read_fn(void *file, char *buf, int nbytes)
+static int read_fn(void *file, char *buf, int nbytes)
 {
     mem_region_t *mem = (mem_region_t *)file;
     size_t available = mem->size - mem->position;
@@ -28,7 +28,7 @@ int read_fn(void *file, char *buf, int nbytes)
     return mem->position - pos;
 }
 
-int write_fn(void *file, const char *buf, int nbytes)
+static int write_fn(void *file, const char *buf, int nbytes)
 {
     mem_region_t *mem = (mem_region_t *)file;
     size_t available = mem->size - mem->position;
@@ -42,13 +42,35 @@ int write_fn(void *file, const char *buf, int nbytes)
     return mem->position - pos;
 }
 
-off_t seek_fn(void *file, off_t offset, int whence)
+static off_t seek_fn(void *file, off_t offset, int whence)
 {
-    return 0;
+    mem_region_t *mem = (mem_region_t *)file;
+    size_t position = 0;
+
+    switch (whence)
+    {
+    case SEEK_SET:
+        position = offset;
+        break;
+    case SEEK_CUR:
+        position = mem->position + offset;
+        break;
+    case SEEK_END:
+        position = mem->size + offset;
+        break;
+    default:
+        return -1;
+    }
+
+    if (position >= mem->size)
+        return -1;
+    mem->position = position;
+    return position;
 }
 
-int close_fn(void *file)
+static int close_fn(void *file)
 {
+    free(file);
     return 0;
 }
 
