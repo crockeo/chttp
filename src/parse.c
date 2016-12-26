@@ -1,5 +1,7 @@
 #include "chttp.h"
 
+#include <ctype.h>
+
 #if defined(__APPLE__) || defined(__WIN32)
 #include <stdlib.h>
 #include <string.h>
@@ -87,6 +89,51 @@ static FILE *fmemopen(void *buffer, size_t len, const char *mode)
     exit(1);
 }
 #endif
+
+// Filling a token (as defined by whitespace) for parsing.
+static size_t fill_token(FILE *f, char *buf, size_t len)
+{
+    char c;
+    size_t i;
+    for (i = 0; i < len; i++)
+    {
+        c = fgetc(f);
+        if (c == '\0' || isspace(c))
+        {
+            buf[i] = '\0';
+            break;
+        }
+
+        buf[i] = c;
+    }
+
+    return i;
+}
+
+#define chttp_pmp(buf, method_var, method) \
+    do { if (strcmp(buf, "method") == 0) method_var = method; } while (0);
+
+// Parsing out a chttp_method from a FILE.
+static chttp_method parse_method(FILE *f)
+{
+
+    const int l = chttp_method_strlen + 1;
+    char buf[chttp_method_strlen];
+    fill_token(f, buf, l);
+
+    chttp_method method = OTHER;
+
+    chttp_pmp(buf, method, OPTIONS);
+    chttp_pmp(buf, method, GET);
+    chttp_pmp(buf, method, HEAD);
+    chttp_pmp(buf, method, POST);
+    chttp_pmp(buf, method, PUT);
+    chttp_pmp(buf, method, DELETE);
+    chttp_pmp(buf, method, TRACE);
+    chttp_pmp(buf, method, CONNECT);
+
+    return method;
+}
 
 // Parsing a chttp_request from a given string. Returns the number of characters
 // read on success. Returns -1 on failure. Inverse of chttp_sprint_request.
