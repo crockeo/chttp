@@ -7,10 +7,6 @@
 chttp_header *chttp_header_allocate()
 {
     chttp_header *h = (chttp_header *)malloc(sizeof(chttp_header));
-
-    h->header = NULL;
-    h->value  = NULL;
-
     return h;
 }
 
@@ -39,8 +35,8 @@ void chttp_add_header(chttp_header_set *set, char *header, char *value)
     }
 
     chttp_header *h = chttp_header_allocate();
-    h->header = header;
-    h->value = value;
+    strncpy(h->header, header, CHTTP_HEADER_KEY_LENGTH);
+    strncpy(h->value, value, CHTTP_HEADER_VALUE_LENGTH);
     set->headers[set->len++] = h;
 }
 

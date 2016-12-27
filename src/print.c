@@ -23,7 +23,7 @@ int chttp_sprint_method(chttp_method method, char *str, int len)
 }
 
 // Utility for printing iteratively into a string.
-static int chttp_sprint(char *dst, int len, const char *format, int *n, ...)
+static int chttp_sprint(char *dst, int len, const char *format, size_t *n, ...)
 {
     va_list arg_list;
     int v = snprintf(dst + *n, len, format, arg_list);
@@ -36,12 +36,12 @@ static int chttp_sprint(char *dst, int len, const char *format, int *n, ...)
 // Printing a chttp_request to a given string. Returns the number of characters
 // printed if there is enough room. If not, it returns -1. Inverse of
 // chttp_parse_request.
-int chttp_sprint_request(chttp_request *r, char *string, int len)
+size_t chttp_sprint_request(chttp_request *r, char *string, int len)
 {
     char method[chttp_method_strlen];
     chttp_sprint_method(r->method, method, chttp_method_strlen);
 
-    int n = 0;
+    size_t n = 0;
     if (chttp_sprint(string, len, "%s %s %s\n", &n, method, r->uri, r->http_version))
         return -1;
     for (int i = 0; i < r->headers->len; i++)
@@ -59,9 +59,9 @@ int chttp_sprint_request(chttp_request *r, char *string, int len)
 // Printing a chttp_response to a given string. Returns the number of characters
 // printed if there is enough room. If not, it returns -1. Inverse of
 // chttp_arse_response.
-int chttp_sprint_response(chttp_response *r, char *string, int len)
+size_t chttp_sprint_response(chttp_response *r, char *string, int len)
 {
-    int n = 0;
+    size_t n = 0;
     if (chttp_sprint(string, len, "%s %d %s\n", &n, r->http_version, r->code, r->reason_phrase))
         return -1;
     for (int i = 0; i < r->headers->len; i++)

@@ -79,6 +79,11 @@ static int close_fn(void *file)
 static FILE *fmemopen(void* buffer, size_t len, const char *mode)
 {
     mem_region_t *mem = (mem_region_t *)malloc(sizeof(mem_region_t));
+
+    mem->position = 0;
+    mem->size = len;
+    mem->buffer = buffer;
+
     return funopen(mem, &read_fn, &write_fn, &seek_fn, &close_fn);
 }
 #elif __WIN32
@@ -114,46 +119,54 @@ static size_t fill_token(FILE *f, char *buf, size_t len)
     do { if (strcmp(buf, "method") == 0) method_var = method; } while (0);
 
 // Parsing out a chttp_method from a FILE.
-static chttp_method parse_method(FILE *f)
+static size_t parse_method(FILE *f, chttp_method *method)
 {
-
     const int l = chttp_method_strlen + 1;
     char buf[chttp_method_strlen];
-    fill_token(f, buf, l);
+    size_t len = fill_token(f, buf, l);
 
-    chttp_method method = OTHER;
+    *method = OTHER;
+    chttp_pmp(buf, *method, OPTIONS);
+    chttp_pmp(buf, *method, GET);
+    chttp_pmp(buf, *method, HEAD);
+    chttp_pmp(buf, *method, POST);
+    chttp_pmp(buf, *method, PUT);
+    chttp_pmp(buf, *method, DELETE);
+    chttp_pmp(buf, *method, TRACE);
+    chttp_pmp(buf, *method, CONNECT);
 
-    chttp_pmp(buf, method, OPTIONS);
-    chttp_pmp(buf, method, GET);
-    chttp_pmp(buf, method, HEAD);
-    chttp_pmp(buf, method, POST);
-    chttp_pmp(buf, method, PUT);
-    chttp_pmp(buf, method, DELETE);
-    chttp_pmp(buf, method, TRACE);
-    chttp_pmp(buf, method, CONNECT);
-
-    return method;
+    return len;
 }
 
 // Parsing a chttp_request from a given string. Returns the number of characters
 // read on success. Returns -1 on failure. Inverse of chttp_sprint_request.
-int chttp_parse_request(chttp_request *r, FILE *f)
+size_t chttp_parse_request(chttp_request *r, FILE *f)
 {
-    // TODO
+    chttp_method method;
+    r->method = parse_method(f, &method);
+
+    fill_token(f, r->uri, CHTTP_URI_LENGTH);
+    fill_token(f, r->http_version, CHTTP_HTTP_VERSION_LENGTH);
+
+    // TODO: Parse out headers.
+
+    int n = fread(r->body, sizeof(char), CHTTP_BODY_LENGTH - 1, f);
+    r->body[n] = '\0';
+
     return -1;
 }
 
 // Parsing a chttp_response from a given string. Returns the number of
 // characters read on success. Returns -1 on failure. Inverse of
 // chttp_sprint_response.
-int chttp_parse_response(chttp_response *r, FILE *f)
+size_t chttp_parse_response(chttp_response *r, FILE *f)
 {
     // TODO
     return -1;
 }
 
 // Pipes string to a FILE * and calls chttp_parse_request.
-int chttp_sparse_request(chttp_request *r, const char *string, int len)
+size_t chttp_sparse_request(chttp_request *r, const char *string, int len)
 {
     FILE *f = fmemopen((char *)string, len, "r");
     if (f == NULL)
@@ -165,7 +178,7 @@ int chttp_sparse_request(chttp_request *r, const char *string, int len)
 }
 
 // Pipes string to a FILE * and falls chttp_parse_response.
-int chttp_sparse_response(chttp_response *r, const char *string, int len)
+size_t chttp_sparse_response(chttp_response *r, const char *string, int len)
 {
     FILE *f = fmemopen((char *)string, len, "r");
     if (f == NULL)
