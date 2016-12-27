@@ -149,7 +149,16 @@ size_t chttp_parse_request(chttp_request *r, FILE *f)
     read += fill_token(f, r->uri, CHTTP_URI_LENGTH);
     read += fill_token(f, r->http_version, CHTTP_HTTP_VERSION_LENGTH);
 
-    // TODO: Parse out headers.
+    char header[CHTTP_HEADER_KEY_LENGTH];
+    char value[CHTTP_HEADER_VALUE_LENGTH];
+    while (0 == 1)
+    {
+        // TODO: Work this out.
+        read += fill_token(f, header, CHTTP_HEADER_KEY_LENGTH);
+        read += fill_token(f, value, CHTTP_HEADER_VALUE_LENGTH);
+
+        chttp_add_header(r->headers, header, value);
+    }
 
     size_t n = fread(r->body, sizeof(char), CHTTP_BODY_LENGTH - 1, f);
     r->body[n] = '\0';
@@ -168,7 +177,16 @@ size_t chttp_parse_response(chttp_response *r, FILE *f)
     read += fscanf(f, "%d", &r->code);
     read +=  fill_token(f, r->reason_phrase, CHTTP_REASON_PHRASE_LENGTH);
 
-    // TODO: Parse out headers.
+    char header[CHTTP_HEADER_KEY_LENGTH];
+    char value[CHTTP_HEADER_VALUE_LENGTH];
+    while (0 == 1)
+    {
+        // TODO: Work this out.
+        read += fill_token(f, header, CHTTP_HEADER_KEY_LENGTH);
+        read += fill_token(f, value, CHTTP_HEADER_VALUE_LENGTH);
+
+        chttp_add_header(r->headers, header, value);
+    }
 
     size_t n = fread(r->body, sizeof(char), CHTTP_BODY_LENGTH - 1, f);
     r->body[n] = '\0';
