@@ -142,18 +142,20 @@ static size_t parse_method(FILE *f, chttp_method *method)
 // read on success. Returns -1 on failure. Inverse of chttp_sprint_request.
 size_t chttp_parse_request(chttp_request *r, FILE *f)
 {
+    size_t read = 0;
     chttp_method method;
-    r->method = parse_method(f, &method);
+    read += parse_method(f, &method);
 
-    fill_token(f, r->uri, CHTTP_URI_LENGTH);
-    fill_token(f, r->http_version, CHTTP_HTTP_VERSION_LENGTH);
+    read += fill_token(f, r->uri, CHTTP_URI_LENGTH);
+    read += fill_token(f, r->http_version, CHTTP_HTTP_VERSION_LENGTH);
 
     // TODO: Parse out headers.
 
-    int n = fread(r->body, sizeof(char), CHTTP_BODY_LENGTH - 1, f);
+    size_t n = fread(r->body, sizeof(char), CHTTP_BODY_LENGTH - 1, f);
     r->body[n] = '\0';
+    read += n;
 
-    return -1;
+    return read;
 }
 
 // Parsing a chttp_response from a given string. Returns the number of
@@ -161,8 +163,18 @@ size_t chttp_parse_request(chttp_request *r, FILE *f)
 // chttp_sprint_response.
 size_t chttp_parse_response(chttp_response *r, FILE *f)
 {
-    // TODO
-    return -1;
+    size_t read = 0;
+    read += fill_token(f, r->http_version, CHTTP_HTTP_VERSION_LENGTH);
+    read += fscanf(f, "%d", &r->code);
+    read +=  fill_token(f, r->reason_phrase, CHTTP_REASON_PHRASE_LENGTH);
+
+    // TODO: Parse out headers.
+
+    size_t n = fread(r->body, sizeof(char), CHTTP_BODY_LENGTH - 1, f);
+    r->body[n] = '\0';
+    read += n;
+
+    return read;
 }
 
 // Pipes string to a FILE * and calls chttp_parse_request.
