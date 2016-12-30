@@ -38,14 +38,14 @@ static int chttp_sprint(char *dst, int len, const char *format, size_t *n, ...)
 // chttp_parse_request.
 size_t chttp_sprint_request(chttp_request *r, char *string, int len)
 {
-    char method[chttp_method_strlen];
-    chttp_sprint_method(r->method, method, chttp_method_strlen);
+    char method[CHTTP_METHOD_LENGTH];
+    chttp_sprint_method(r->method, method, CHTTP_METHOD_LENGTH);
 
     size_t n = 0;
     if (chttp_sprint(string, len, "%s %s %s\n", &n, method, r->uri, r->http_version))
         return -1;
     for (int i = 0; i < r->headers->len; i++)
-        if (chttp_sprint(string, len, "%s: %s\n", &n, r->headers->headers[i]->header, r->headers->headers[i]->value))
+        if (chttp_sprint(string, len, "%s: %s\n", &n, r->headers->headers[i].header, r->headers->headers[i].value))
             return -1;
     if (chttp_sprint(string, len, "%s\n", &n, r->body))
         return -1;
@@ -65,7 +65,7 @@ size_t chttp_sprint_response(chttp_response *r, char *string, int len)
     if (chttp_sprint(string, len, "%s %d %s\n", &n, r->http_version, r->code, r->reason_phrase))
         return -1;
     for (int i = 0; i < r->headers->len; i++)
-        if (chttp_sprint(string, len, "%s: %s\n", &n, r->headers->headers[i]->header, r->headers->headers[i]->value))
+        if (chttp_sprint(string, len, "%s: %s\n", &n, r->headers->headers[i].header, r->headers->headers[i].value))
             return -1;
     if (chttp_sprint(string, len, "%s\n", &n, r->body))
         return -1;
@@ -79,12 +79,12 @@ size_t chttp_sprint_response(chttp_response *r, char *string, int len)
 // Printing a chttp_request to FILE *f.
 void chttp_fprint_request(FILE *f, chttp_request *r)
 {
-    char method[chttp_method_strlen];
-    chttp_sprint_method(r->method, method, chttp_method_strlen);
+    char method[CHTTP_METHOD_LENGTH];
+    chttp_sprint_method(r->method, method, CHTTP_METHOD_LENGTH);
 
     fprintf(f, "%s %s %s\n", method, r->uri, r->http_version);
     for (int i = 0; i < r->headers->len; i++)
-        fprintf(f, "%s: %s\n", r->headers->headers[i]->header, r->headers->headers[i]->value);
+        fprintf(f, "%s: %s\n", r->headers->headers[i].header, r->headers->headers[i].value);
     fprintf(f, "%s\n", r->body);
 }
 
@@ -93,7 +93,7 @@ void chttp_fprint_response(FILE *f, chttp_response *r)
 {
     fprintf(f, "%s %d %s\n", r->http_version, r->code, r->reason_phrase);
     for (int i = 0; i < r->headers->len; i++)
-        fprintf(f, "%s: %s\n", r->headers->headers[i]->header, r->headers->headers[i]->value);
+        fprintf(f, "%s: %s\n", r->headers->headers[i].header, r->headers->headers[i].value);
     fprintf(f, "%s\n", r->body);
 }
 

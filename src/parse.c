@@ -121,8 +121,8 @@ static size_t fill_token(FILE *f, char *buf, size_t len)
 // Parsing out a chttp_method from a FILE.
 static size_t parse_method(FILE *f, chttp_method *method)
 {
-    const int l = chttp_method_strlen + 1;
-    char buf[chttp_method_strlen];
+    const int l = CHTTP_METHOD_LENGTH + 1;
+    char buf[CHTTP_METHOD_LENGTH];
     size_t len = fill_token(f, buf, l);
 
     *method = OTHER;

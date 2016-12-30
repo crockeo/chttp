@@ -11,25 +11,22 @@ typedef struct
     char value[CHTTP_HEADER_VALUE_LENGTH];
 } chttp_header;
 
-// Allocating space for a chttp_header.
-chttp_header *chttp_header_allocate();
-
 // Representing the entire set of HTTP headers.
 typedef struct
 {
     int size;
     int len;
-    chttp_header **headers;
+    chttp_header *headers;
 } chttp_header_set;
 
 // Allocating the space for a chttp_header_set.
 chttp_header_set *chttp_header_set_allocate();
 
 // Adding a header to the header set.
-void chttp_add_header(chttp_header_set *set,  char *header,  char *value);
+void chttp_add_header(chttp_header_set *set, const char *header, const char *value);
 
 // Getting a header from the header set.
-char *chttp_get_header(chttp_header_set *set,  char *header);
+char *chttp_get_header(chttp_header_set *set, const char *header);
 
 // The set of methods a client can request.
 typedef enum
@@ -44,8 +41,6 @@ typedef enum
     CONNECT,
     OTHER
 } chttp_method;
-
-const int chttp_method_strlen = 8;
 
 // Printing a method to a string.
 int chttp_sprint_method(chttp_method method, char *str, int len);
