@@ -106,6 +106,8 @@ Body text.\n";
 
     chttp_assert("Invalid body.", strcmp(r->body, "Body text.\n") == 0);
 
+    chttp_request_free(r);
+
     return NULL;
 }
 
@@ -130,6 +132,8 @@ Content-Type: text/html\n\
 
     chttp_assert("Invalid body.", strcmp(r->body, "<!doctype html>\n<html><body><h1>Hello world!</h1></body></html>\n") == 0);
 
+    chttp_response_free(r);
+
     return NULL;
 }
 
@@ -145,6 +149,24 @@ static char *test_parse()
 // Print
 static char *test_sprint_request()
 {
+    chttp_request *r = chttp_request_allocate();
+    const int len = 4096;
+    char output[len];
+
+    r->method = POST;
+    strcpy(r->uri, "/test");
+    strcpy(r->http_version, "HTTP1.1");
+    chttp_add_header(r->headers, "Content-Type", "text/html");
+    strcpy(r->body, "test body");
+
+    chttp_sprint_request(r, output, len);
+
+    chttp_assert("Invalid printing.", strcmp(output, "POST /test HTTP1.1\n\
+Content-Type: text/html\n\
+test body\n") == 0);
+
+    chttp_request_free(r);
+
     return NULL;
 }
 
