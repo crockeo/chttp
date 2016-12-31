@@ -99,6 +99,9 @@ static FILE *fmemopen(void *buffer, size_t len, const char *mode)
 static size_t fill_token(FILE *f, char *buf, size_t len)
 {
     char c;
+    while (isspace(c = fgetc(f)) && !feof(f)) { }
+    ungetc(c, f);
+
     size_t i;
     for (i = 0; i < len; i++)
     {
@@ -106,6 +109,8 @@ static size_t fill_token(FILE *f, char *buf, size_t len)
         if (c == '\0' || isspace(c))
         {
             buf[i] = '\0';
+            if (isspace(c))
+                ungetc(c, f);
             break;
         }
 
@@ -116,7 +121,7 @@ static size_t fill_token(FILE *f, char *buf, size_t len)
 }
 
 #define chttp_pmp(buf, method_var, method) \
-    do { if (strcmp(buf, "method") == 0) method_var = method; } while (0);
+    do { if (strcmp(buf, #method) == 0) method_var = method; } while (0);
 
 // Parsing out a chttp_method from a FILE.
 static size_t parse_method(FILE *f, chttp_method *method)
@@ -142,29 +147,31 @@ static size_t parse_method(FILE *f, chttp_method *method)
 // read on success. Returns -1 on failure. Inverse of chttp_sprint_request.
 size_t chttp_parse_request(chttp_request *r, FILE *f)
 {
-    size_t read = 0;
-    chttp_method method;
-    read += parse_method(f, &method);
+    size_t start = ftell(f);
+    parse_method(f, &r->method);
 
-    read += fill_token(f, r->uri, CHTTP_URI_LENGTH);
-    read += fill_token(f, r->http_version, CHTTP_HTTP_VERSION_LENGTH);
+    fill_token(f, r->uri, CHTTP_URI_LENGTH);
+    fill_token(f, r->http_version, CHTTP_HTTP_VERSION_LENGTH);
 
     char header[CHTTP_HEADER_KEY_LENGTH];
     char value[CHTTP_HEADER_VALUE_LENGTH];
-    while (0 == 1)
+    size_t e = 0;
+    while (!feof(f))
     {
-        // TODO: Work this out.
-        read += fill_token(f, header, CHTTP_HEADER_KEY_LENGTH);
-        read += fill_token(f, value, CHTTP_HEADER_VALUE_LENGTH);
+        e = fill_token(f, header, CHTTP_HEADER_KEY_LENGTH);
+        if (header[e - 1] != ':')
+            break;
+        header[e - 1] = '\0';
+        fill_token(f, value, CHTTP_HEADER_VALUE_LENGTH);
 
         chttp_add_header(r->headers, header, value);
     }
 
-    size_t n = fread(r->body, sizeof(char), CHTTP_BODY_LENGTH - 1, f);
-    r->body[n] = '\0';
-    read += n;
+    memcpy(r->body, header, e);
+    size_t n = fread(r->body + e, sizeof(char), CHTTP_BODY_LENGTH - 1, f);
+    (r->body + e)[n] = '\0';
 
-    return read;
+    return ftell(f) - start;
 }
 
 // Parsing a chttp_response from a given string. Returns the number of
@@ -172,27 +179,30 @@ size_t chttp_parse_request(chttp_request *r, FILE *f)
 // chttp_sprint_response.
 size_t chttp_parse_response(chttp_response *r, FILE *f)
 {
-    size_t read = 0;
-    read += fill_token(f, r->http_version, CHTTP_HTTP_VERSION_LENGTH);
-    read += fscanf(f, "%d", &r->code);
-    read +=  fill_token(f, r->reason_phrase, CHTTP_REASON_PHRASE_LENGTH);
+    size_t start = ftell(f);
+    fill_token(f, r->http_version, CHTTP_HTTP_VERSION_LENGTH);
+    fscanf(f, "%d", &r->code);
+    fill_token(f, r->reason_phrase, CHTTP_REASON_PHRASE_LENGTH);
 
     char header[CHTTP_HEADER_KEY_LENGTH];
     char value[CHTTP_HEADER_VALUE_LENGTH];
-    while (0 == 1)
+    size_t e = 0;
+    while (!feof(f))
     {
-        // TODO: Work this out.
-        read += fill_token(f, header, CHTTP_HEADER_KEY_LENGTH);
-        read += fill_token(f, value, CHTTP_HEADER_VALUE_LENGTH);
+        e = fill_token(f, header, CHTTP_HEADER_KEY_LENGTH);
+        if (header[e - 1] != ':')
+            break;
+        header[e - 1] = '\0';
+        fill_token(f, value, CHTTP_HEADER_VALUE_LENGTH);
 
         chttp_add_header(r->headers, header, value);
     }
 
-    size_t n = fread(r->body, sizeof(char), CHTTP_BODY_LENGTH - 1, f);
-    r->body[n] = '\0';
-    read += n;
+    memcpy(r->body, header, e);
+    size_t n = fread(r->body + e, sizeof(char), CHTTP_BODY_LENGTH - 1, f);
+    (r->body + e)[n] = '\0';
 
-    return read;
+    return ftell(f) - start;
 }
 
 // Pipes string to a FILE * and calls chttp_parse_request.

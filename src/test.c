@@ -83,6 +83,28 @@ static char *test_headers()
 // Parse
 static char *test_parse_request()
 {
+    chttp_request *r = chttp_request_allocate();
+
+    const char *str = "POST /testing HTTP1.1\n\
+Content-Type: text/json\n\
+Accept: Nothing\n\
+Body text.\n";
+
+    chttp_sparse_request(r, str, strlen(str));
+
+    chttp_assert("Incorrect method.", r->method == POST);
+    chttp_assert("Incorrect path.", strcmp(r->uri, "/testing") == 0);
+
+    chttp_assert("Invalid first header key.", strcmp(r->headers->headers[0].header, "Content-Type") == 0);
+    chttp_assert("Invalid first header value.", strcmp(r->headers->headers[0].value, "text/json") == 0);
+    chttp_assert("Invalid first header get.", strcmp(chttp_get_header(r->headers, "Content-Type"), "text/json") == 0);
+
+    chttp_assert("Invalid second header key.", strcmp(r->headers->headers[1].header, "Accept") == 0);
+    chttp_assert("Invalid second header value.", strcmp(r->headers->headers[1].value, "Nothing") == 0);
+    chttp_assert("Invalid second header get.", strcmp(chttp_get_header(r->headers, "Accept"), "Nothing") == 0);
+
+    chttp_assert("Invalid body.", strcmp(r->body, "Body text.\n") == 0);
+
     return NULL;
 }
 
