@@ -9,6 +9,7 @@ set(CHTTP_SOURCES
   src/headers.c
   src/parse.c
   src/print.c
+  src/io.c
 )
 
 add_library(chttp ${CHTTP_SOURCES})

@@ -22,6 +22,9 @@ typedef struct
 // Allocating the space for a chttp_header_set.
 chttp_header_set *chttp_header_set_allocate();
 
+// Freeing a chttp_header_set.
+void chttp_header_set_free(chttp_header_set *s);
+
 // Adding a header to the header set.
 void chttp_add_header(chttp_header_set *set, const char *header, const char *value);
 
@@ -60,6 +63,9 @@ typedef struct
 // Allocating the space for a chttp_request.
 chttp_request *chttp_request_allocate();
 
+// Freeing a chttp_request.
+void chttp_request_free(chttp_request *r);
+
 // Representing a response to a client.
 typedef struct
 {
@@ -74,6 +80,9 @@ typedef struct
 
 // Allocating the space for a chttp_response.
 chttp_response *chttp_response_allocate();
+
+// Freeing a chttp_response.
+void chttp_response_free(chttp_response *r);
 
 // Parsing a chttp_request from a given string. Returns the number of characters
 // read on success. Returns -1 on failure. Inverse of chttp_sprint_request.

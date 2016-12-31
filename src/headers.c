@@ -15,6 +15,13 @@ chttp_header_set *chttp_header_set_allocate()
     return hs;
 }
 
+// Freeing a chttp_header_set.
+void chttp_header_set_free(chttp_header_set *s)
+{
+    free(s->headers);
+    free(s);
+}
+
 // Adding a header to the header set.
 void chttp_add_header(chttp_header_set *set, const char *header, const char *value)
 {
