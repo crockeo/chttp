@@ -160,7 +160,6 @@ static char *test_sprint_request()
     strcpy(r->body, "test body");
 
     chttp_sprint_request(r, output, len);
-
     chttp_assert("Invalid printing.", strcmp(output, "POST /test HTTP1.1\n\
 Content-Type: text/html\n\
 test body\n") == 0);
@@ -177,6 +176,21 @@ static char *test_fprint_request()
 
 static char *test_sprint_response()
 {
+    chttp_response *r = chttp_response_allocate();
+    const int len = 4096;
+    char output[len];
+
+    strcpy(r->http_version, "HTTP1.1");
+    r->code = 200;
+    strcpy(r->reason_phrase, "OK");
+    chttp_add_header(r->headers, "Content-Type", "text/html");
+    strcpy(r->body, "test body");
+
+    chttp_sprint_response(r, output, len);
+    chttp_assert("Invalid printing.", strcmp(output, "HTTP1.1 200 OK\n\
+Content-Type: text/html\n\
+test body\n") == 0);
+
     return NULL;
 }
 

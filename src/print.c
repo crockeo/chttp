@@ -1,9 +1,10 @@
 #include "chttp.h"
 
+#include <stdarg.h>
 #include <string.h>
 
 // Printing a method to a string.
-int chttp_sprint_method(chttp_method method, char *str, int len)
+size_t chttp_sprint_method(chttp_method method, char *str, int len)
 {
     char *method_str;
     switch (method)
@@ -19,15 +20,17 @@ int chttp_sprint_method(chttp_method method, char *str, int len)
     case OTHER:   method_str = "OTHER";   break;
     }
 
-    return (int)(stpcpy(str, method_str) - str);
+    return (size_t)(stpcpy(str, method_str) - str);
 }
 
 // Utility for printing iteratively into a string.
 static int chttp_sprint(char *dst, int len, const char *format, size_t *n, ...)
 {
     va_list arg_list;
-    int v = snprintf(dst + *n, len, format, arg_list);
-    if (v > len - *n)
+    va_start(arg_list, n);
+    size_t v = vsnprintf(dst + *n, len - *n, format, arg_list);
+    va_end(arg_list);
+    if (v > (len - *n))
         return 1;
     *n += v;
     return 0;
@@ -38,10 +41,11 @@ static int chttp_sprint(char *dst, int len, const char *format, size_t *n, ...)
 // chttp_parse_request.
 size_t chttp_sprint_request(chttp_request *r, char *string, int len)
 {
+    size_t n = 0;
+
     char method[CHTTP_METHOD_LENGTH];
     chttp_sprint_method(r->method, method, CHTTP_METHOD_LENGTH);
 
-    size_t n = 0;
     if (chttp_sprint(string, len, "%s %s %s\n", &n, method, r->uri, r->http_version))
         return -1;
     for (int i = 0; i < r->headers->len; i++)
@@ -62,6 +66,7 @@ size_t chttp_sprint_request(chttp_request *r, char *string, int len)
 size_t chttp_sprint_response(chttp_response *r, char *string, int len)
 {
     size_t n = 0;
+
     if (chttp_sprint(string, len, "%s %d %s\n", &n, r->http_version, r->code, r->reason_phrase))
         return -1;
     for (int i = 0; i < r->headers->len; i++)

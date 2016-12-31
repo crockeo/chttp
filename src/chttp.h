@@ -46,7 +46,7 @@ typedef enum
 } chttp_method;
 
 // Printing a method to a string.
-int chttp_sprint_method(chttp_method method, char *str, int len);
+size_t chttp_sprint_method(chttp_method method, char *str, int len);
 
 // Representing a request from a client.
 typedef struct
