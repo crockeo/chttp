@@ -94,6 +94,7 @@ Body text.\n";
 
     chttp_assert("Incorrect method.", r->method == POST);
     chttp_assert("Incorrect path.", strcmp(r->uri, "/testing") == 0);
+    chttp_assert("Incorrect http version.", strcmp(r->http_version, "HTTP1.1") == 0);
 
     chttp_assert("Invalid first header key.", strcmp(r->headers->headers[0].header, "Content-Type") == 0);
     chttp_assert("Invalid first header value.", strcmp(r->headers->headers[0].value, "text/json") == 0);
@@ -110,6 +111,25 @@ Body text.\n";
 
 static char *test_parse_response()
 {
+    chttp_response *r = chttp_response_allocate();
+
+    const char *str = "HTTP1.1 200 OK\n\
+Content-Type: text/html\n\
+<!doctype html>\n\
+<html><body><h1>Hello world!</h1></body></html>\n";
+
+    chttp_sparse_response(r, str, strlen(str));
+
+    chttp_assert("Incorrect http version.", strcmp(r->http_version, "HTTP1.1") == 0);
+    chttp_assert("Incorrect response code.", r->code == 200);
+    chttp_assert("Incorrect response string.", strcmp(r->reason_phrase, "OK") == 0);
+
+    chttp_assert("Invalid first header key.", strcmp(r->headers->headers[0].header, "Content-Type") == 0);
+    chttp_assert("Invalid first header value.", strcmp(r->headers->headers[0].value, "text/html") == 0);
+    chttp_assert("Invalid first header get.", strcmp(chttp_get_header(r->headers, "Content-Type"), "text/html") == 0);
+
+    chttp_assert("Invalid body.", strcmp(r->body, "<!doctype html>\n<html><body><h1>Hello world!</h1></body></html>\n") == 0);
+
     return NULL;
 }
 
