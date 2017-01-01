@@ -85,7 +85,7 @@ static char *test_parse_request()
 {
     chttp_request *r = chttp_request_allocate();
 
-    const char *str = "POST /testing HTTP1.1\n\
+    const char *str = "POST /testing HTTP/1.1\n\
 Content-Type: text/json\n\
 Accept: Nothing\n\
 Body text.\n";
@@ -94,7 +94,7 @@ Body text.\n";
 
     chttp_assert("Incorrect method.", r->method == POST);
     chttp_assert("Incorrect path.", strcmp(r->uri, "/testing") == 0);
-    chttp_assert("Incorrect http version.", strcmp(r->http_version, "HTTP1.1") == 0);
+    chttp_assert("Incorrect http version.", strcmp(r->http_version, "HTTP/1.1") == 0);
 
     chttp_assert("Invalid first header key.", strcmp(r->headers->headers[0].header, "Content-Type") == 0);
     chttp_assert("Invalid first header value.", strcmp(r->headers->headers[0].value, "text/json") == 0);
@@ -115,14 +115,14 @@ static char *test_parse_response()
 {
     chttp_response *r = chttp_response_allocate();
 
-    const char *str = "HTTP1.1 200 OK\n\
+    const char *str = "HTTP/1.1 200 OK\n\
 Content-Type: text/html\n\
 <!doctype html>\n\
 <html><body><h1>Hello world!</h1></body></html>\n";
 
     chttp_sparse_response(r, str, strlen(str));
 
-    chttp_assert("Incorrect http version.", strcmp(r->http_version, "HTTP1.1") == 0);
+    chttp_assert("Incorrect http version.", strcmp(r->http_version, "HTTP/1.1") == 0);
     chttp_assert("Incorrect response code.", r->code == 200);
     chttp_assert("Incorrect response string.", strcmp(r->reason_phrase, "OK") == 0);
 
@@ -155,12 +155,12 @@ static char *test_sprint_request()
 
     r->method = POST;
     strcpy(r->uri, "/test");
-    strcpy(r->http_version, "HTTP1.1");
+    strcpy(r->http_version, "HTTP/1.1");
     chttp_add_header(r->headers, "Content-Type", "text/html");
     strcpy(r->body, "test body");
 
     chttp_sprint_request(r, output, len);
-    chttp_assert("Invalid printing.", strcmp(output, "POST /test HTTP1.1\n\
+    chttp_assert("Invalid printing.", strcmp(output, "POST /test HTTP/1.1\n\
 Content-Type: text/html\n\
 test body\n") == 0);
 
@@ -171,6 +171,34 @@ test body\n") == 0);
 
 static char *test_fprint_request()
 {
+    const char *filename = "test_request";
+
+    FILE *f = fopen(filename, "w");
+    chttp_assert("Output test file is NULL.", f != NULL);
+
+    chttp_request *r = chttp_request_allocate();
+
+    r->method = POST;
+    strcpy(r->uri, "/test");
+    strcpy(r->http_version, "HTTP/1.1");
+    chttp_add_header(r->headers, "Content-Type", "text/html");
+    strcpy(r->body, "test body");
+
+    chttp_fprint_request(f, r);
+    chttp_request_free(r);
+
+    const int output_len = 4096;
+    char output[output_len];
+    freopen(filename, "r", f);
+    chttp_assert("Input test file is NULL.", f != NULL);
+
+    fread(output, sizeof(char), output_len, f);
+    chttp_assert("Invalid printing.", strcmp(output, "POST /test HTTP/1.1\n\
+Content-Type: text/html\n\
+test body\n") == 0);
+    fclose(f);
+    remove(filename);
+
     return NULL;
 }
 
@@ -180,14 +208,14 @@ static char *test_sprint_response()
     const int len = 4096;
     char output[len];
 
-    strcpy(r->http_version, "HTTP1.1");
+    strcpy(r->http_version, "HTTP/1.1");
     r->code = 200;
     strcpy(r->reason_phrase, "OK");
     chttp_add_header(r->headers, "Content-Type", "text/html");
     strcpy(r->body, "test body");
 
     chttp_sprint_response(r, output, len);
-    chttp_assert("Invalid printing.", strcmp(output, "HTTP1.1 200 OK\n\
+    chttp_assert("Invalid printing.", strcmp(output, "HTTP/1.1 200 OK\n\
 Content-Type: text/html\n\
 test body\n") == 0);
 
@@ -196,6 +224,34 @@ test body\n") == 0);
 
 static char *test_fprint_response()
 {
+    const char *filename = "test_response";
+
+    FILE *f = fopen(filename, "w");
+    chttp_assert("Output test file is NULL.", f != NULL);
+
+    chttp_response *r = chttp_response_allocate();
+
+    strcpy(r->http_version, "HTTP/1.1");
+    r->code = 200;
+    strcpy(r->reason_phrase, "OK");
+    chttp_add_header(r->headers, "Content-Type", "text/html");
+    strcpy(r->body, "test body");
+
+    chttp_fprint_response(f, r);
+    chttp_response_free(r);
+
+    const int output_len = 4096;
+    char output[output_len];
+    freopen(filename, "r", f);
+    chttp_assert("Input test file is NULL.", f != NULL);
+
+    fread(output, sizeof(char), output_len, f);
+    chttp_assert("Invalid printing.", strcmp(output, "HTTP/1.1 200 OK\n\
+Content-Type: text/html\n\
+test body\n") == 0);
+    fclose(f);
+    remove(filename);
+
     return NULL;
 }
 
