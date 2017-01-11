@@ -1,12 +1,38 @@
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-#include <unistd.h>
+#include <getopt.h>
 #else
 #error "Can only run chttp_server on a POSIX operating system."
 #endif
+
+// chttp_print_error
+//   Parameters:
+//     * f - File pointer to print to.
+//
+//   Description:
+//     Printing the program's error page.
+void chttp_print_error(FILE *f)
+{
+    fprintf(f, "chttp_server: use '--help' to view help page.\n");
+}
+
+// chttp_print_help
+//   Parameters:
+//     * f - File pointer to print to.
+//
+//   Description:
+//     Printing the program's help page.
+void chttp_print_help(FILE *f)
+{
+    fprintf(f, "chttp_server use:\n");
+    fprintf(f, "  --help          Display this page.\n");
+    fprintf(f, "  --address (-a)  Set the IP address (\"all\"=listen on all addresses.)\n");
+    fprintf(f, "  --port (-p)     Set the port.\n");
+}
 
 // chttp_server_args
 //   Description:
@@ -15,6 +41,7 @@ struct chttp_server_args
 {
     char address[16];
     uint16_t port;
+    bool help;
 };
 typedef struct chttp_server_args chttp_server_args;
 
@@ -33,19 +60,34 @@ typedef struct chttp_server_args chttp_server_args;
 int chttp_server_args_parse(int argc, char **argv, chttp_server_args *args)
 {
     memset(args, 0, sizeof(chttp_server_args));
-    strncpy(args->address, "127.0.0.1", 16);
+    strncpy(args->address, "all", 16);
     args->port = 3000;
 
+    struct option options[] =
+    {
+        { "help", no_argument, (int *)&args->help, 1 },
+
+        { "address", required_argument, 0, 'a' },
+        { "port"   , required_argument, 0, 'p' },
+
+        { 0, 0, 0, 0 }
+    };
+
+    int idx = 0;
     int c;
-    while ((c = getopt(argc, argv, "a:p:")) >= 0)
+    while ((c = getopt_long(argc, argv, "a:p:", options, &idx)) >= 0)
     {
         switch (c)
         {
+        case 0:
+            break;
         case 'a':
-            strncpy(args->address, "127.0.0.1", 16);
+            strncpy(args->address, optarg, 16);
             break;
         case 'p':
             args->port = atoi(optarg);
+        default:
+            chttp_print_error(stdout);
             break;
         }
     }
@@ -77,14 +119,20 @@ int main(int argc, char **argv)
     chttp_server_args args;
     if (chttp_server_args_parse(argc, argv, &args))
     {
-        printf("Failed to parse args.\n");
+        chttp_print_error(stderr);
         return 1;
     }
 
     if (chttp_server_args_validate(&args))
     {
-        printf("Failed to validate args.\n");
+        chttp_print_error(stderr);
         return 1;
+    }
+
+    if (args.help)
+    {
+        chttp_print_help(stdout);
+        return 0;
     }
 
     printf("%s %d\n", args.address, args.port);
