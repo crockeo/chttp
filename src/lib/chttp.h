@@ -19,6 +19,9 @@ typedef struct
     chttp_header *headers;
 } chttp_header_set;
 
+// Filling a header set.
+void chttp_header_set_fill(chttp_header_set *s);
+
 // Allocating the space for a chttp_header_set.
 chttp_header_set *chttp_header_set_allocate();
 
@@ -60,6 +63,9 @@ typedef struct
     char body[CHTTP_BODY_LENGTH];
 } chttp_request;
 
+// Filling a request.
+void chttp_request_fill(chttp_request *r);
+
 // Allocating the space for a chttp_request.
 chttp_request *chttp_request_allocate();
 
@@ -77,6 +83,9 @@ typedef struct
 
     char body[CHTTP_BODY_LENGTH];
 } chttp_response;
+
+// Filling a response.
+void chttp_response_fill(chttp_response *r);
 
 // Allocating the space for a chttp_response.
 chttp_response *chttp_response_allocate();

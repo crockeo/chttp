@@ -3,15 +3,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Filling a header set.
+void chttp_header_set_fill(chttp_header_set *s)
+{
+    s->size = 1;
+    s->len = 0;
+    s->headers = (chttp_header *)malloc(sizeof(chttp_header));
+}
+
 // Allocating the space for a chttp_header_set.
 chttp_header_set *chttp_header_set_allocate()
 {
     chttp_header_set *hs = (chttp_header_set *)malloc(sizeof(chttp_header_set));
-
-    hs->size = 1;
-    hs->len = 0;
-    hs->headers = (chttp_header *)malloc(sizeof(chttp_header));
-
+    chttp_header_set_fill(hs);
     return hs;
 }
 
