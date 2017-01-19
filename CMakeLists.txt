@@ -8,11 +8,13 @@ set(LIBRARY_OUTPUT_PATH "${PROJECT_SOURCE_DIR}/out")
 ##
 # CHTTP Library
 set(CHTTP_HEADERS
+  src/lib/chttp_fmemopen.h
   src/lib/chttp_defines.h
   src/lib/chttp.h
 )
 
 set(CHTTP_SOURCES
+  src/lib/fmemopen.c
   src/lib/headers.c
   src/lib/parse.c
   src/lib/print.c
