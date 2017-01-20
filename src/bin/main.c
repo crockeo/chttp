@@ -15,6 +15,8 @@
 #error "Can only run chttp_server on a POSIX operating system."
 #endif
 
+#include "../lib/chttp.h"
+
 // chttp_print_error
 //   Parameters:
 //     * f - File pointer to print to.
@@ -213,6 +215,9 @@ int chttp_create_server(chttp_server_args args, int *sock)
     return 0;
 }
 
+// chttp_client
+//   Description:
+//     Structure to pass along client information to a response thread.
 struct chttp_client
 {
     socklen_t addr_size;
@@ -234,10 +239,50 @@ void *chttp_respond(void *arg)
     chttp_client *cli = (chttp_client *)arg;
     pthread_detach(pthread_self());
 
-    const char *c = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n<!doctype html> <html><body><h1>Hey</h1></body></html>";
-    const int len = strlen(c);
+    FILE *sock = fdopen(cli->sock, "rw");
+    if (!sock)
+        return NULL;
 
-    write(cli->sock, c, len);
+    chttp_request req;
+    chttp_request_fill(&req);
+    chttp_parse_request(&req, sock);
+
+    const int output_length = CHTTP_BODY_LENGTH + 1024;
+    char output[output_length];
+
+    FILE *f = fopen(req.uri, "r");
+    if (!f)
+    {
+        chttp_response res =
+        {
+            .http_version = "HTTP/1.1",
+            .code = 404,
+            .reason_phrase = "File not found.",
+
+            .headers = NULL
+        };
+
+        sprintf(res.body, "Error 404, file not found: %s", req.uri);
+        chttp_sprint_response(&res, output, output_length);
+    } else
+    {
+        chttp_response res;
+        chttp_response_fill(&res);
+
+        strcpy(res.http_version, "HTTP/1.1");
+        res.code = 200;
+        strcpy(res.reason_phrase, "OK");
+
+        fread(res.body, 1, CHTTP_BODY_LENGTH, f);
+        chttp_sprint_response(&res, output, output_length);
+        fclose(f);
+    }
+
+    // TODO: Using strlen instead of output_length to make sure I don't send out
+    //       extra 0s?
+    fwrite(output, 1, strlen(output), sock);
+
+    fclose(sock);
     chttp_kill_socket(cli->sock);
     free(cli);
 
