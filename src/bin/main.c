@@ -247,40 +247,39 @@ void *chttp_respond(void *arg)
     chttp_request_fill(&req);
     chttp_parse_request(&req, sock);
 
-    const int output_length = CHTTP_BODY_LENGTH + 1024;
-    char output[output_length];
+    // Calculating the correct uri.
+    const int uri_length = CHTTP_URI_LENGTH + 14;
+    char uri[uri_length];
+    sprintf(uri, "www%s%s", req.uri, req.uri[strlen(req.uri) - 1] == '/' ? "index.html" : "");
 
-    FILE *f = fopen(req.uri, "r");
+    // Creating a base response.
+    chttp_response res;
+    chttp_response_fill(&res);
+    strcpy(res.http_version, "HTTP/1.1");
+
+    // Filling it with the appropriate data.
+    FILE *f = fopen(uri, "r");
     if (!f)
     {
-        chttp_response res =
-        {
-            .http_version = "HTTP/1.1",
-            .code = 404,
-            .reason_phrase = "File not found.",
-
-            .headers = NULL
-        };
-
-        sprintf(res.body, "Error 404, file not found: %s", req.uri);
-        chttp_sprint_response(&res, output, output_length);
+        res.code = 404;
+        strcpy(res.reason_phrase, "Not found.");
+        sprintf(res.body, "Error 404, file not found: %s\n", uri);
     } else
     {
-        chttp_response res;
-        chttp_response_fill(&res);
-
-        strcpy(res.http_version, "HTTP/1.1");
         res.code = 200;
         strcpy(res.reason_phrase, "OK");
-
         fread(res.body, 1, CHTTP_BODY_LENGTH, f);
-        chttp_sprint_response(&res, output, output_length);
         fclose(f);
     }
 
     // TODO: Using strlen instead of output_length to make sure I don't send out
     //       extra 0s?
+    const int output_length = CHTTP_BODY_LENGTH + 1024;
+    char output[output_length];
+    chttp_sprint_response(&res, output, output_length);
     fwrite(output, 1, strlen(output), sock);
+
+    chttp_header_set_free(res.headers);
 
     fclose(sock);
     chttp_kill_socket(cli->sock);
