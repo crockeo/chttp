@@ -8,7 +8,7 @@
 // Filling a token (as defined by whitespace) for parsing.
 static size_t fill_token(FILE *f, char *buf, size_t len)
 {
-    char c;
+    int c;
     while (isspace(c = fgetc(f)) && !feof(f)) { }
     ungetc(c, f);
 
@@ -16,7 +16,7 @@ static size_t fill_token(FILE *f, char *buf, size_t len)
     for (i = 0; i < len; i++)
     {
         c = fgetc(f);
-        if (c == '\0' || isspace(c))
+        if (c < 0 || c == '\0' || isspace(c))
         {
             buf[i] = '\0';
             if (isspace(c))
