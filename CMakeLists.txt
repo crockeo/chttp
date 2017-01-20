@@ -18,6 +18,7 @@ set(CHTTP_SOURCES
   src/lib/headers.c
   src/lib/parse.c
   src/lib/print.c
+  src/lib/mime.c
   src/lib/io.c
 )
 
