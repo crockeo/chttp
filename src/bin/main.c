@@ -239,13 +239,18 @@ void *chttp_respond(void *arg)
     chttp_client *cli = (chttp_client *)arg;
     pthread_detach(pthread_self());
 
-    FILE *sock = fdopen(cli->sock, "rw");
-    if (!sock)
-        return NULL;
+    // Getting the content.
+    // TODO: Currently chunking it because I could not come up with a
+    // sufficiently non-blocking solution to reading data from a socket whose
+    // data is not yet always ready, but does not EOF or \0 out.
+    const int content_length = CHTTP_BODY_LENGTH * 2;
+    char content[content_length];
+    read(cli->sock, content, content_length);
 
+    // Setting up the request.
     chttp_request req;
     chttp_request_fill(&req);
-    chttp_parse_request(&req, sock);
+    chttp_sparse_request(&req, content, strlen(content));
 
     // Calculating the correct uri.
     const int uri_length = CHTTP_URI_LENGTH + 14;
@@ -277,11 +282,10 @@ void *chttp_respond(void *arg)
     const int output_length = CHTTP_BODY_LENGTH + 1024;
     char output[output_length];
     chttp_sprint_response(&res, output, output_length);
-    fwrite(output, 1, strlen(output), sock);
+
+    write(cli->sock, output, strlen(output));
 
     chttp_header_set_free(res.headers);
-
-    fclose(sock);
     chttp_kill_socket(cli->sock);
     free(cli);
 

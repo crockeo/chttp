@@ -46,12 +46,14 @@ size_t chttp_sprint_request(chttp_request *r, char *string, int len)
     char method[CHTTP_METHOD_LENGTH];
     chttp_sprint_method(r->method, method, CHTTP_METHOD_LENGTH);
 
-    if (chttp_sprint(string, len, "%s %s %s\n", &n, method, r->uri, r->http_version))
+    if (chttp_sprint(string, len, "%s %s %s\r\n", &n, method, r->uri, r->http_version))
         return -1;
     for (int i = 0; i < r->headers->len; i++)
-        if (chttp_sprint(string, len, "%s: %s\n", &n, r->headers->headers[i].header, r->headers->headers[i].value))
+        if (chttp_sprint(string, len, "%s: %s\r\n", &n, r->headers->headers[i].header, r->headers->headers[i].value))
             return -1;
-    if (chttp_sprint(string, len, "%s\n", &n, r->body))
+    if (chttp_sprint(string, len, "\r\n", &n))
+        return -1;
+    if (chttp_sprint(string, len, "%s\r\n", &n, r->body))
         return -1;
 
     if (n == len)
@@ -67,12 +69,14 @@ size_t chttp_sprint_response(chttp_response *r, char *string, int len)
 {
     size_t n = 0;
 
-    if (chttp_sprint(string, len, "%s %d %s\n", &n, r->http_version, r->code, r->reason_phrase))
+    if (chttp_sprint(string, len, "%s %d %s\r\n", &n, r->http_version, r->code, r->reason_phrase))
         return -1;
     for (int i = 0; i < r->headers->len; i++)
-        if (chttp_sprint(string, len, "%s: %s\n", &n, r->headers->headers[i].header, r->headers->headers[i].value))
+        if (chttp_sprint(string, len, "%s: %s\r\n", &n, r->headers->headers[i].header, r->headers->headers[i].value))
             return -1;
-    if (chttp_sprint(string, len, "%s\n", &n, r->body))
+    if (chttp_sprint(string, len, "\r\n", &n))
+        return -1;
+    if (chttp_sprint(string, len, "%s\r\n", &n, r->body))
         return -1;
 
     if (n == len)
