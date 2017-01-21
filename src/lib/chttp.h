@@ -2,16 +2,21 @@
 #define _CHTTP_HTTP_H_
 
 #include <stdio.h>
+
 #include "chttp_defines.h"
 
-// Representing an HTTP header.
+// chttp_header
+//   Struct containing header/value key-pair for a given header.
 typedef struct
 {
     char header[CHTTP_HEADER_KEY_LENGTH];
     char value[CHTTP_HEADER_VALUE_LENGTH];
 } chttp_header;
 
-// Representing the entire set of HTTP headers.
+// chttp_header_set
+//   Struct used as a front-end for a "header_set" whose "methods" are
+//   implemented below. Internal values should NOT be used, as they are subject
+//   to change and optimization.
 typedef struct
 {
     int size;
@@ -19,22 +24,60 @@ typedef struct
     chttp_header *headers;
 } chttp_header_set;
 
-// Filling a header set.
+// chttp_header_set_fill
+//   Parameters:
+//     * s - The header set to fill.
+//
+//   Description:
+//     Filling a chttp_header_set with data *in-place*, without allocating the
+//     structure itself. Allows programmers to fill data into the header set
+//     without dynamically allocating the struct itself.
 void chttp_header_set_fill(chttp_header_set *s);
 
-// Allocating the space for a chttp_header_set.
+// chttp_header_set_allocate
+//   Description:
+//     Allocates space for a chttp_header_set and calls chttp_header_set_fill
+//     on it.
+//
+//   Returns:
+//     The allocated chttp_header_set.
 chttp_header_set *chttp_header_set_allocate();
 
-// Freeing a chttp_header_set.
+// chttp_header_set_free
+//   Parameters:
+//     * s - The header set to free.
+//
+//   Description:
+//     Freeing a header set pointer. Assumes it must also free the data within
+//     the header set.
 void chttp_header_set_free(chttp_header_set *s);
 
-// Adding a header to the header set.
+// chttp_add_header
+//   Parameters:
+//     * set    - Pointer to the header set.
+//     * header - Header key.
+//     * value  - Header value.
+//
+//   Description:
+//     Adds a header to the header set.
 void chttp_add_header(chttp_header_set *set, const char *header, const char *value);
 
-// Getting a header from the header set.
+// chttp_get_header
+//   Parameters:
+//     * set    - The header set.
+//     * header - Header key.
+//
+//   Description:
+//     Retrieves a header specified from the header set.
+//
+//   Returns:
+//     NULL if the header is not found. Otherwise, a string with the header's
+//     value.
 char *chttp_get_header(chttp_header_set *set, const char *header);
 
-// The set of methods a client can request.
+// chttp_method
+//   Enumeration of all possible HTTP methods. Used in place of a string (e.g.
+//   "OPTIONS" and "GET") for type-safety.
 typedef enum
 {
     OPTIONS,
@@ -48,10 +91,22 @@ typedef enum
     OTHER
 } chttp_method;
 
-// Printing a method to a string.
+// chttp_sprint_method
+//   Parameters:
+//     * method - The HTTP method to print.
+//     * str    - The string to print.
+//     * len    - The length of the buffer described by str.
+//
+//   Description:
+//     Prints the passed chttp_method into the str.
+//
+//   Returns:
+//     The number of characters printed into the string.
 size_t chttp_sprint_method(chttp_method method, char *str, int len);
 
-// Representing a request from a client.
+// chttp_request
+//   Modeling the data passed from a browser requesting a given page. Used in
+//   tandem with the parse functions below to deal with HTTP requests.
 typedef struct
 {
     chttp_method method;
@@ -63,16 +118,35 @@ typedef struct
     char body[CHTTP_BODY_LENGTH];
 } chttp_request;
 
-// Filling a request.
+// chttp_request_fill
+//   Parameters:
+//     * r - The request to fill.
+//
+//   Description:
+//     Fills a chttp_request with informaion in-place (that is, sans
+//     allocation outside of allocating a header_set).
 void chttp_request_fill(chttp_request *r);
 
-// Allocating the space for a chttp_request.
+// chttp_request_allocate
+//   Description:
+//     Allocates a chttp_request and calls chttp_request_fill on that newly
+//     created pointer.
+//
+//   Returns:
+//     Returns the allocating chttp_request.
 chttp_request *chttp_request_allocate();
 
-// Freeing a chttp_request.
+// chttp_request_free
+//   Parameters:
+//     * r - The request to free.
+//
+//   Description:
+//     Freeing a chttp_request.
 void chttp_request_free(chttp_request *r);
 
-// Representing a response to a client.
+// chttp_response
+//   Modeling the data passed from a server would pass back to the client. Used
+//   in tandem with the print functions below to deal with HTTP responses.
 typedef struct
 {
     char http_version[CHTTP_HTTP_VERSION_LENGTH];
@@ -84,52 +158,147 @@ typedef struct
     char body[CHTTP_BODY_LENGTH];
 } chttp_response;
 
-// Filling a response.
+// chttp_response_fill
+//   Parameters:
+//     * r - The response to fill.
+//
+//   Description:
+//     Fills a chttp_response with informaion in-place (that is, sans
+//     allocation outside of allocating a header_set).
 void chttp_response_fill(chttp_response *r);
 
-// Allocating the space for a chttp_response.
+// chttp_response_allocate
+//   Description:
+//     Allocates a chttp_response and calls chttp_response_fill on that newly
+//     created pointer.
+//
+//   Returns:
+//     Returns the allocating chttp_response.
 chttp_response *chttp_response_allocate();
 
-// Freeing a chttp_response.
+// chttp_response_free
+//   Parameters:
+//     * r - The response to free.
+//
+//   Description:
+//     Freeing a chttp_response.
 void chttp_response_free(chttp_response *r);
 
-// Parsing a chttp_request from a given string. Returns the number of characters
-// read on success. Returns -1 on failure. Inverse of chttp_sprint_request.
+// chttp_parse_request
+//   Parameters:
+//     * r - The request to fill.
+//     * f - The file pointer to read.
+//
+//   Description:
+//     Parsing a chttp_request from a FILE pointer. Inverse of
+//     chttp_sprint_request.
+//
+//   Returns:
+//     The number of characters read on success. Returns -1 on failure.
 size_t chttp_parse_request(chttp_request *r, FILE *f);
 
-// Parsing a chttp_response from a given string. Returns the number of
-// characters read on success. Returns -1 on failure. Inverse of
-// chttp_sprint_response.
+// chttp_parse_response
+//   Parameters:
+//     * r - The response to fill.
+//     * f - The file pointer to read.
+//
+//   Description:
+//     Parsing a chttp_response from a FILE pointer. Inverse of
+//     chttp_sprint_response.
+//
+//   Returns:
+//     The number of characters read on success. Returns -1 on failure.
 size_t chttp_parse_response(chttp_response *r, FILE *f);
 
-// Pipes string to a FILE * and calls chttp_parse_request.
+// chttp_sparse_request
+//   Parameters:
+//     * r      - The request to fill.
+//     * string - The string to parse.
+//     * int    - The maximum length of the string.
+//
+//   Description:
+//     Parsing a chttp_request from a given string. Inverse of
+//     chttp_sprint_response.
+//
+//   Returns:
+//     The number of characters read from the string. Returns -1 on failure.
 size_t chttp_sparse_request(chttp_request *r, const char *string, int len);
 
-// Pipes string to a FILE * and falls chttp_parse_response.
+// chttp_sparse_response
+//   Parameters:
+//     * r      - The response to fill.
+//     * string - The string to parse.
+//     * len    - The maximum length of the string.
+//
+//   Description:
+//     Parsing a chttp_response from a given string. Inverse of
+//     chttp_sprint_response.
+//
+//   Returns:
+//     The number of characters read from the string. Returns -1 on failure.
 size_t chttp_sparse_response(chttp_response *r, const char *string, int len);
 
-// Printing a chttp_request to a given string. Returns the number of characters
-// printed if there is enough room. If not, it returns -1. Inverse of
-// chttp_parse_request.
+// chttp_sprint_request
+//   Parameters:
+//     * r      - Request to print.
+//     * string - Buffer printed to.
+//     * len    - Maximum length of the string.
+//
+//   Description:
+//     Printing the value of a request to a string. Inverse of
+//     chttp_sparse_request.
+//
+//   Returns:
+//     The number of characters printed into the strong. Returns -1 on failure.
 size_t chttp_sprint_request(chttp_request *r, char *string, int len);
 
-// Printing a chttp_response to a given string. Returns the number of characters
-// printed if there is enough room. If not, it returns -1. Inverse of
-// chttp_parse_response.
+// chttp_sprint_response
+//   Parameters:
+//     * r      - Request to print.
+//     * string - Buffer printed to.
+//     * len    - Maximum length of the string.
+//
+//   Description:
+//     Printing the value of a response to a string. Inverse of
+//     chttp_sparse_response.
+//
+//   Returns:
+//     The number of characters printed into the strong. Returns -1 on failure.
 size_t chttp_sprint_response(chttp_response *r, char *string, int len);
 
-// Printing a chttp_request to FILE *f.
+// chttp_fprint_request
+//   Parameters:
+//     * f - The file to print to.
+//     * r - The request to print.
+//
+//   Description:
+//     Prints a request out to a file.
 void chttp_fprint_request(FILE *f, chttp_request *r);
 
-// Printing a chttp_response to FILE *f.
+// chttp_fprint_response
+//   Parameters:
+//     * f - The file to print to.
+//     * r - The response to print.
+//
+//   Description:
+//     Prints a response out to a file.
 void chttp_fprint_response(FILE *f, chttp_response *r);
 
-// Printing a chttp_request to stdout.
+// chttp_print_request
+//   Parameters:
+//     * r - The request to print.
+//
+//   Description:
+//     Prints a request out to stdout.
 void chttp_print_request(chttp_request *r);
 
-// Printing a chttp_response to stdout.
+// chttp_print_response
+//   Parameters:
+//     * r - The response to print.
+//
+//   Description:
+//     Prints a response out to stdout.
 void chttp_print_response(chttp_response *r);
-
 
 // chttp_uri_suffix
 //   Parameters:
