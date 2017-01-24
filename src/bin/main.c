@@ -142,7 +142,7 @@ int chttp_server_args_validate(chttp_server_args args)
 //     Kills and closes the socket described by 'sock'.
 void chttp_kill_socket(int sock)
 {
-    // TODO: Anything else?
+    shutdown(sock, 0);
     close(sock);
 }
 
@@ -277,8 +277,6 @@ void *chttp_respond(void *arg)
         fclose(f);
     }
 
-    // TODO: Using strlen instead of output_length to make sure I don't send out
-    //       extra 0s?
     const int output_length = CHTTP_BODY_LENGTH + 1024;
     char output[output_length];
     chttp_sprint_response(&res, output, output_length);
