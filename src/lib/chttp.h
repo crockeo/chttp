@@ -273,7 +273,7 @@ size_t chttp_sprint_response(chttp_response *r, char *string, int len);
 //
 //   Description:
 //     Prints a request out to a file.
-void chttp_fprint_request(FILE *f, chttp_request *r);
+size_t chttp_fprint_request(FILE *f, chttp_request *r);
 
 // chttp_fprint_response
 //   Parameters:
@@ -282,7 +282,7 @@ void chttp_fprint_request(FILE *f, chttp_request *r);
 //
 //   Description:
 //     Prints a response out to a file.
-void chttp_fprint_response(FILE *f, chttp_response *r);
+size_t chttp_fprint_response(FILE *f, chttp_response *r);
 
 // chttp_print_request
 //   Parameters:
@@ -290,7 +290,7 @@ void chttp_fprint_response(FILE *f, chttp_response *r);
 //
 //   Description:
 //     Prints a request out to stdout.
-void chttp_print_request(chttp_request *r);
+size_t chttp_print_request(chttp_request *r);
 
 // chttp_print_response
 //   Parameters:
@@ -298,7 +298,7 @@ void chttp_print_request(chttp_request *r);
 //
 //   Description:
 //     Prints a response out to stdout.
-void chttp_print_response(chttp_response *r);
+size_t chttp_print_response(chttp_response *r);
 
 // chttp_uri_suffix
 //   Parameters:

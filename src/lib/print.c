@@ -86,28 +86,36 @@ size_t chttp_sprint_response(chttp_response *r, char *string, int len)
 }
 
 // Printing a chttp_request to FILE *f.
-void chttp_fprint_request(FILE *f, chttp_request *r)
+size_t chttp_fprint_request(FILE *f, chttp_request *r)
 {
-    char method[CHTTP_METHOD_LENGTH];
-    chttp_sprint_method(r->method, method, CHTTP_METHOD_LENGTH);
+    size_t n = 0;
 
-    fprintf(f, "%s %s %s\n", method, r->uri, r->http_version);
+    char method[CHTTP_METHOD_LENGTH];
+    n += chttp_sprint_method(r->method, method, CHTTP_METHOD_LENGTH);
+
+    n += fprintf(f, "%s %s %s\n", method, r->uri, r->http_version);
     for (int i = 0; i < r->headers->len; i++)
-        fprintf(f, "%s: %s\n", r->headers->headers[i].header, r->headers->headers[i].value);
-    fprintf(f, "%s\n", r->body);
+        n += fprintf(f, "%s: %s\n", r->headers->headers[i].header, r->headers->headers[i].value);
+    n += fprintf(f, "%s\n", r->body);
+
+    return n;
 }
 
 // Printing a chttp_response to FILE *f.
-void chttp_fprint_response(FILE *f, chttp_response *r)
+size_t chttp_fprint_response(FILE *f, chttp_response *r)
 {
-    fprintf(f, "%s %d %s\n", r->http_version, r->code, r->reason_phrase);
+    size_t n = 0;
+
+    n += fprintf(f, "%s %d %s\n", r->http_version, r->code, r->reason_phrase);
     for (int i = 0; i < r->headers->len; i++)
-        fprintf(f, "%s: %s\n", r->headers->headers[i].header, r->headers->headers[i].value);
-    fprintf(f, "%s\n", r->body);
+        n += fprintf(f, "%s: %s\n", r->headers->headers[i].header, r->headers->headers[i].value);
+    n += fprintf(f, "%s\n", r->body);
+
+    return n;
 }
 
 // Printing a chttp_request to stdout.
-void chttp_print_request(chttp_request *r) { chttp_fprint_request(stdout, r); }
+size_t chttp_print_request(chttp_request *r) { return chttp_fprint_request(stdout, r); }
 
 // Printing a chttp_response to stdout.
-void chttp_print_response(chttp_response *r) { chttp_fprint_response(stdout, r); }
+size_t chttp_print_response(chttp_response *r) { return chttp_fprint_response(stdout, r); }
