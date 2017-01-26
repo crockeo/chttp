@@ -160,9 +160,9 @@ static char *test_sprint_request()
     strcpy(r->body, "test body");
 
     chttp_sprint_request(r, output, len);
-    chttp_assert("Invalid printing.", strcmp(output, "POST /test HTTP/1.1\n\
-Content-Type: text/html\n\
-test body\n") == 0);
+    chttp_assert("Invalid printing.", strcmp(output, "POST /test HTTP/1.1\r\n\
+Content-Type: text/html\r\n\r\n\
+test body\r\n\r\n") == 0);
 
     chttp_request_free(r);
 
@@ -193,9 +193,9 @@ static char *test_fprint_request()
     chttp_assert("Input test file is NULL.", f != NULL);
 
     fread(output, sizeof(char), output_len, f);
-    chttp_assert("Invalid printing.", strcmp(output, "POST /test HTTP/1.1\n\
-Content-Type: text/html\n\
-test body\n") == 0);
+    chttp_assert("Invalid printing.", strcmp(output, "POST /test HTTP/1.1\r\n\
+Content-Type: text/html\r\n\r\n\
+test body\r\n\r\n") == 0);
     fclose(f);
     remove(filename);
 
@@ -215,9 +215,9 @@ static char *test_sprint_response()
     strcpy(r->body, "test body");
 
     chttp_sprint_response(r, output, len);
-    chttp_assert("Invalid printing.", strcmp(output, "HTTP/1.1 200 OK\n\
-Content-Type: text/html\n\
-test body\n") == 0);
+    chttp_assert("Invalid printing.", strcmp(output, "HTTP/1.1 200 OK\r\n\
+Content-Type: text/html\r\n\r\n\
+test body\r\n\r\n") == 0);
 
     return NULL;
 }
@@ -246,9 +246,9 @@ static char *test_fprint_response()
     chttp_assert("Input test file is NULL.", f != NULL);
 
     fread(output, sizeof(char), output_len, f);
-    chttp_assert("Invalid printing.", strcmp(output, "HTTP/1.1 200 OK\n\
-Content-Type: text/html\n\
-test body\n") == 0);
+    chttp_assert("Invalid printing.", strcmp(output, "HTTP/1.1 200 OK\r\n\
+Content-Type: text/html\r\n\r\n\
+test body\r\n\r\n") == 0);
     fclose(f);
     remove(filename);
 

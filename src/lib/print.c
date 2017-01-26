@@ -53,7 +53,7 @@ size_t chttp_sprint_request(chttp_request *r, char *string, int len)
             return -1;
     if (chttp_sprint(string, len, "\r\n", &n))
         return -1;
-    if (chttp_sprint(string, len, "%s\r\n", &n, r->body))
+    if (chttp_sprint(string, len, "%s\r\n\r\n", &n, r->body))
         return -1;
 
     if (n == len)
@@ -76,7 +76,7 @@ size_t chttp_sprint_response(chttp_response *r, char *string, int len)
             return -1;
     if (chttp_sprint(string, len, "\r\n", &n))
         return -1;
-    if (chttp_sprint(string, len, "%s\r\n", &n, r->body))
+    if (chttp_sprint(string, len, "%s\r\n\r\n", &n, r->body))
         return -1;
 
     if (n == len)
@@ -93,10 +93,11 @@ size_t chttp_fprint_request(FILE *f, chttp_request *r)
     char method[CHTTP_METHOD_LENGTH];
     n += chttp_sprint_method(r->method, method, CHTTP_METHOD_LENGTH);
 
-    n += fprintf(f, "%s %s %s\n", method, r->uri, r->http_version);
+    n += fprintf(f, "%s %s %s\r\n", method, r->uri, r->http_version);
     for (int i = 0; i < r->headers->len; i++)
-        n += fprintf(f, "%s: %s\n", r->headers->headers[i].header, r->headers->headers[i].value);
-    n += fprintf(f, "%s\n", r->body);
+        n += fprintf(f, "%s: %s\r\n", r->headers->headers[i].header, r->headers->headers[i].value);
+    n += fprintf(f, "\r\n");
+    n += fprintf(f, "%s\r\n\r\n", r->body);
 
     return n;
 }
@@ -106,10 +107,11 @@ size_t chttp_fprint_response(FILE *f, chttp_response *r)
 {
     size_t n = 0;
 
-    n += fprintf(f, "%s %d %s\n", r->http_version, r->code, r->reason_phrase);
+    n += fprintf(f, "%s %d %s\r\n", r->http_version, r->code, r->reason_phrase);
     for (int i = 0; i < r->headers->len; i++)
-        n += fprintf(f, "%s: %s\n", r->headers->headers[i].header, r->headers->headers[i].value);
-    n += fprintf(f, "%s\n", r->body);
+        n += fprintf(f, "%s: %s\r\n", r->headers->headers[i].header, r->headers->headers[i].value);
+    n += fprintf(f, "\r\n");
+    n += fprintf(f, "%s\r\n\r\n", r->body);
 
     return n;
 }

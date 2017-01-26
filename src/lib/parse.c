@@ -5,9 +5,54 @@
 
 #include "chttp_fmemopen.h"
 
+// Filling a token like fill_token, only that it also sets the value in bk to
+// determine whether or not there is a break in the message (\r\n\r\n). If bk
+// is null, functions exactly like fill_token (only that it breaks on \r\n\r\n).
+static size_t fill_tokenb(FILE *f, char *buf, size_t len, int *bk)
+{
+    if (bk != NULL)
+        *bk = 0;
+
+    int c;
+    while (isspace(c = fgetc(f)) && !feof(f)) { }
+    ungetc(c, f);
+
+    size_t i;
+    int mode = 0;
+    for (i = 0; i < (len - 1) && (c = fgetc(f)) > 0; i++)
+    {
+        if (mode == 0 && c == 13)
+            mode = 1;
+        else if (mode == 1 && c == 10)
+            mode = 2;
+        else if (mode == 2 && c == 13)
+            mode = 3;
+        else if (mode == 3 && c == 10)
+        {
+            if (bk != NULL)
+                *bk = 1;
+            break;
+        } else if (isspace(c))
+        {
+            ungetc(c, f);
+            break;
+        } else
+        {
+            mode = 0;
+            buf[i] = (char)c;
+        }
+    }
+
+    if (bk != NULL && (c <= 0 || feof(f)))
+        *bk = 1;
+    buf[i] = '\0';
+    return i;
+}
+
 // Filling a token (as defined by whitespace) for parsing.
 static size_t fill_token(FILE *f, char *buf, size_t len)
 {
+    return fill_tokenb(f, buf, len, NULL);
     int c;
     while (isspace(c = fgetc(f)) && !feof(f)) { }
     ungetc(c, f);
