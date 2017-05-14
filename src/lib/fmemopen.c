@@ -89,8 +89,7 @@ FILE *fmemopen(void* buffer, size_t len, const char *mode)
 #elif __WIN32
 FILE *fmemopen(void *buffer, size_t len, const char *mode)
 {
-    // TODO: Implement.
-    printf("fmemopen unimplemented on WIN32.\n");
+    fprintf(stderr, "fmemopen unimplemented on WIN32.\n");
     exit(1);
 }
 #endif

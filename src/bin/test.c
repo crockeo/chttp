@@ -266,12 +266,41 @@ static char *test_print()
 }
 
 ////
+// MIME
+// TODO: MIME testing.
+
+static char *test_mime_load()
+{
+    return NULL;
+}
+
+static char *test_suffix()
+{
+    return NULL;
+}
+
+static char *test_mime_lookup()
+{
+    return NULL;
+}
+
+static char *test_mime()
+{
+    chttp_run_test(mime_load);
+    chttp_run_test(suffix);
+    chttp_run_test(mime_lookup);
+
+    return NULL;
+}
+
+////
 // All
 static char *test_all()
 {
     chttp_run_test(headers);
     chttp_run_test(parse);
     chttp_run_test(print);
+    chttp_run_test(mime);
 
     return NULL;
 }

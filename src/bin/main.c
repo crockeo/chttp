@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
+#include <sys/stat.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <getopt.h>
@@ -54,6 +55,7 @@ void chttp_print_help(FILE *f)
 //     Structured container for server arguments.
 struct chttp_server_args
 {
+    char mime_path[4096];
     char address[16];
     uint16_t port;
     int backlog;
@@ -78,6 +80,7 @@ int chttp_server_args_parse(int argc, char **argv, chttp_server_args *args)
 {
     memset(args, 0, sizeof(chttp_server_args));
     strncpy(args->address, "all", 16);
+    strncpy(args->mime_path, "www/mime_demo.types", 4096);
     args->port = 3000;
 
     struct option options[] =
@@ -85,8 +88,9 @@ int chttp_server_args_parse(int argc, char **argv, chttp_server_args *args)
         { "help", no_argument, (int *)&args->help, 1 },
         { "verbose", no_argument, (int *)&args->verbose, 1 },
 
-        { "address", required_argument, 0, 'a' },
-        { "port"   , required_argument, 0, 'p' },
+        { "address" , required_argument, 0, 'a' },
+        { "port"    , required_argument, 0, 'p' },
+        { "mimepath", required_argument, 0, 'm' },
 
         { 0, 0, 0, 0 }
     };
@@ -110,12 +114,31 @@ int chttp_server_args_parse(int argc, char **argv, chttp_server_args *args)
             break;
         case 'p':
             args->port = atoi(optarg);
+        case 'm':
+            strncpy(args->mime_path, optarg, 4096);
+            break;
         default:
             return 1;
             break;
         }
     }
 
+    return 0;
+}
+
+// chttp_server_args_ip_validate
+//   Parameters
+//     * address - the IP of the server.
+//
+//   Description:
+//     Checks if the given IP string is a valid IP string, or if it is
+//     malformed.
+//
+//   Returns:
+//     -1 if invalid. 0 if valid.
+int chttp_server_args_ip_validate(char address[16])
+{
+    // TODO
     return 0;
 }
 
@@ -130,7 +153,28 @@ int chttp_server_args_parse(int argc, char **argv, chttp_server_args *args)
 //     -1 if invalid. 0 if valid.
 int chttp_server_args_validate(chttp_server_args args)
 {
-    // TODO
+    if (chttp_server_args_ip_validate(args.address))
+    {
+        if (args.verbose)
+            printf("Invalid IP address.\n");
+        return -1;
+    }
+
+    if (args.backlog < 0 || args.backlog > 1000)
+    {
+        if (args.verbose)
+            printf("Invalid backlog.\n");
+        return -1;
+    }
+
+    struct stat s;
+    if (stat(args.mime_path, &s) != 0)
+    {
+        if (args.verbose)
+            printf("MIME file (%s) does not exist.\n", args.mime_path);
+        return -1;
+    }
+
     return 0;
 }
 
@@ -240,11 +284,9 @@ void *chttp_respond(void *arg)
     pthread_detach(pthread_self());
 
     // Getting the content.
-    // TODO: Currently chunking it because I could not come up with a
-    // sufficiently non-blocking solution to reading data from a socket whose
-    // data is not yet always ready, but does not EOF or \0 out.
     const int content_length = CHTTP_BODY_LENGTH * 2;
     char content[content_length];
+    memset(content, 0, content_length);
     read(cli->sock, content, content_length);
 
     // Setting up the request.
@@ -342,10 +384,16 @@ int main(int argc, char **argv)
         printf("Starting server with:\n");
         printf("  Address: %s\n", args.address);
         printf("  Port: %u\n", args.port);
+        printf("  Mime Path %s\n", args.mime_path);
         printf("  Backlog: %d\n", args.backlog);
         printf("  Help: %d\n", args.help);
         printf("  Verbose: %d\n", args.verbose);
     }
+
+    if (args.verbose)
+        printf("Constructing MIME dictionary...\n");
+    chttp_mime_map *map = chttp_mime_map_allocate();
+    chttp_mime_map_init(map, args.mime_path);
 
     int sock;
     if (chttp_create_server(args, &sock))

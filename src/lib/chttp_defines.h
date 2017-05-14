@@ -8,5 +8,6 @@
 #define CHTTP_HTTP_VERSION_LENGTH     64
 #define CHTTP_REASON_PHRASE_LENGTH    64
 #define CHTTP_BODY_LENGTH          16384
+#define CHTTP_MIME_FILE            "mime.types"
 
 #endif
