@@ -136,9 +136,52 @@ int chttp_server_args_parse(int argc, char **argv, chttp_server_args *args)
 //
 //   Returns:
 //     -1 if invalid. 0 if valid.
-int chttp_server_args_ip_validate(char address[16])
+int chttp_server_args_ip_validate(chttp_server_args args)
 {
-    // TODO
+    if (strncmp(args.address, "all", 16) == 0)
+        return 0;
+
+    for (int i = 0; i < 16; i++)
+    {
+        if (args.address[i] == '\0')
+            break;
+        if (args.address [i] != '.' && (args.address[i] < '0' || args.address[i] > '9'))
+        {
+            if (args.verbose)
+                printf("Invalid character in address string (%s) \n", args.address);
+            return -1;
+        }
+    }
+
+    char *last = args.address;
+    char *c = strtok(args.address, ".");
+    for (int i = 0; i < 4; i++)
+    {
+        if (c == NULL)
+        {
+            if (args.verbose)
+                printf("Too few sections in IP (%s)\n", args.address);
+            return -1;
+        }
+
+        if ((int)(c - last - 1) > 3)
+        {
+            if (args.verbose)
+                printf("Too large an IP subsection in address string (%s)\n", args.address);
+            return -1;
+        }
+
+        last = c;
+        c = strtok(NULL, ".");
+    }
+
+    if (c != NULL)
+    {
+        if (args.verbose)
+            printf("Too many sections in IP (%s)\n", args.address);
+        return -1;
+    }
+
     return 0;
 }
 
@@ -153,7 +196,7 @@ int chttp_server_args_ip_validate(char address[16])
 //     -1 if invalid. 0 if valid.
 int chttp_server_args_validate(chttp_server_args args)
 {
-    if (chttp_server_args_ip_validate(args.address))
+    if (chttp_server_args_ip_validate(args))
     {
         if (args.verbose)
             printf("Invalid IP address.\n");
