@@ -307,6 +307,7 @@ int chttp_create_server(chttp_server_args args, int *sock)
 //     Structure to pass along client information to a response thread.
 struct chttp_client
 {
+    chttp_mime_map *map;
     socklen_t addr_size;
     int sock;
     struct sockaddr_in addr;
@@ -340,12 +341,26 @@ void *chttp_respond(void *arg)
     // Calculating the correct uri.
     const int uri_length = CHTTP_URI_LENGTH + 14;
     char uri[uri_length];
+    memset(uri, 0, uri_length);
     sprintf(uri, "www%s%s", req.uri, req.uri[strlen(req.uri) - 1] == '/' ? "index.html" : "");
 
     // Creating a base response.
     chttp_response res;
     chttp_response_fill(&res);
     strcpy(res.http_version, "HTTP/1.1");
+
+    // Trying to get the MIME type for the URI.
+    const char *suffix = chttp_uri_suffix(uri, uri_length);
+    if (suffix)
+    {
+        int suffix_len = strlen(suffix);
+
+        const int mime_len = 256;
+        char mime_type[mime_len];
+
+        if (!chttp_uri_mime(cli->map, suffix, suffix_len, mime_type, mime_len))
+            chttp_add_header(res.headers, "Content-Type", mime_type);
+    }
 
     // Filling it with the appropriate data.
     FILE *f = fopen(uri, "r");
@@ -365,6 +380,8 @@ void *chttp_respond(void *arg)
     const int output_length = CHTTP_BODY_LENGTH + 1024;
     char output[output_length];
     chttp_sprint_response(&res, output, output_length);
+
+    printf("%s\n", output);
 
     write(cli->sock, output, strlen(output));
 
@@ -431,12 +448,16 @@ int main(int argc, char **argv)
         printf("  Backlog: %d\n", args.backlog);
         printf("  Help: %d\n", args.help);
         printf("  Verbose: %d\n", args.verbose);
+
+        printf("Constructing MIME dictionary...\n");
     }
 
-    if (args.verbose)
-        printf("Constructing MIME dictionary...\n");
     chttp_mime_map *map = chttp_mime_map_allocate();
-    chttp_mime_map_init(map, args.mime_path);
+    if (chttp_mime_map_init(map, args.mime_path))
+    {
+        chttp_print_error(stderr, "Could not initialize MIME map.");
+        return 1;
+    }
 
     int sock;
     if (chttp_create_server(args, &sock))
@@ -451,6 +472,7 @@ int main(int argc, char **argv)
         cli = (chttp_client *)malloc(sizeof(chttp_client));
         memset(cli, 0, sizeof(chttp_client));
 
+        cli->map = map;
         cli->addr_size = sizeof(cli->addr);
         cli->sock = accept(sock, (struct sockaddr *)&cli->addr, &cli->addr_size);
         if (args.verbose)
@@ -458,7 +480,7 @@ int main(int argc, char **argv)
         chttp_handle_client(cli);
     }
 
-    printf("%s %d\n", args.address, args.port);
+    chttp_mime_map_free(map);
 
     return 0;
 }
