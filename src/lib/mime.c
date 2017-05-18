@@ -13,12 +13,34 @@
 //
 //   Returns:
 //     -1 if the suffix is invalid. 0 if the suffix is valid.
-int chttp_validate_suffix(const char *suffix, size_t suffix_len)
+static int chttp_validate_suffix(const char *suffix, size_t suffix_len)
 {
     for (int i = 0; i < suffix_len; i++)
         if (suffix[i] < 'a' || suffix[i] > 'z')
             return -1;
     return 0;
+}
+
+// chttp_uri_suffix
+//   Parameters:
+//     * uri - The URI to parse.
+//     * len - The length of the URI.
+//
+//   Description:
+//     Takes a URI and finds its suffix. Used in choosing MIME types.
+//
+//   Returns:
+//     A pointer to the URI where the suffix begins. If the function cannot find
+//     a suffix, it instead returns NULL.
+const char *chttp_uri_suffix(const char *uri, size_t len)
+{
+    for (int i = len - 1; i >= 0; i--)
+    {
+        if (uri[i] == '.')
+            return uri + i + 1;
+    }
+
+    return NULL;
 }
 
 // chttp_mime_map_allocate
@@ -65,7 +87,7 @@ void chttp_mime_map_free(chttp_mime_map *map)
 //     Adds a new entry to the chttp_mime_map.
 void chttp_mime_map_add(chttp_mime_map *map, const char *suffix, size_t suffix_len, const char *type, size_t type_len)
 {
-    if (!chttp_validate_suffix(suffix, suffix_len))
+    if (chttp_validate_suffix(suffix, suffix_len))
         return;
 
     chttp_mime_map *curr = map;
@@ -79,7 +101,9 @@ void chttp_mime_map_add(chttp_mime_map *map, const char *suffix, size_t suffix_l
     }
 
     curr->end = 1;
-    curr->type = type;
+
+    curr->type = (char *)malloc(sizeof(char) * type_len);
+    strncpy(curr->type, type, type_len);
     curr->type_len = type_len;
 }
 
@@ -98,12 +122,12 @@ void chttp_mime_map_add(chttp_mime_map *map, const char *suffix, size_t suffix_l
 //     type through a pointer (*type_len) passed into the function.
 const char *chttp_mime_map_get(chttp_mime_map *map, const char *suffix, size_t suffix_len, size_t *type_len)
 {
-    if (!chttp_validate_suffix(suffix, suffix_len))
+    if (chttp_validate_suffix(suffix, suffix_len))
         return NULL;
 
     chttp_mime_map *curr = map;
     for (int i = 0; i < suffix_len && curr != NULL; i++)
-        curr = curr->children[i];
+        curr = curr->children[suffix[i] - 'a'];
     if (curr != NULL && curr->end)
         return curr->type;
     return NULL;
@@ -124,33 +148,6 @@ int chttp_mime_map_contains(chttp_mime_map *map, const char *suffix, size_t suff
 {
     size_t n;
     return chttp_mime_map_get(map, suffix, suffix_len, &n) != NULL;
-}
-
-// chttp_global_mime_map
-//   Description:
-//     The global map used in determining MIME content.
-static chttp_mime_map *chttp_global_mime_map = NULL;
-
-// chttp_uri_suffix
-//   Parameters:
-//     * uri - The URI to parse.
-//     * len - The length of the URI.
-//
-//   Description:
-//     Takes a URI and finds its suffix. Used in choosing MIME types.
-//
-//   Returns:
-//     A pointer to the URI where the suffix begins. If the function cannot find
-//     a suffix, it instead returns NULL.
-const char *chttp_uri_suffix(const char *uri, size_t len)
-{
-    for (int i = len - 1; i >= 0; i--)
-    {
-        if (uri[i] == '.')
-            return uri + i + 1;
-    }
-
-    return NULL;
 }
 
 // chttp_mime_init
@@ -201,10 +198,10 @@ int chttp_mime_map_init(chttp_mime_map *map, const char *path)
 //     0 upon success.
 int chttp_uri_mime(chttp_mime_map *map, const char *suffix, size_t suffix_len, char *buf, size_t buf_len)
 {
-    if (chttp_global_mime_map == NULL)
+    if (map == NULL)
         return -1;
     size_t type_len;
-    const char *type = chttp_mime_map_get(chttp_global_mime_map, suffix, suffix_len, &type_len);
+    const char *type = chttp_mime_map_get(map, suffix, suffix_len, &type_len);
     if (type == NULL || type_len > buf_len)
         return -1;
 

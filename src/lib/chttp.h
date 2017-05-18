@@ -319,7 +319,7 @@ const char *chttp_uri_suffix(const char *uri, size_t len);
 struct chttp_mime_map {
     struct chttp_mime_map *children[26];
     int end;
-    const char *type;
+    char *type;
     size_t type_len;
 };
 typedef struct chttp_mime_map chttp_mime_map;
@@ -339,6 +339,46 @@ chttp_mime_map *chttp_mime_map_allocate();
 //   Description:
 //     Frees a map and all of its children (recursively).
 void chttp_mime_map_free(chttp_mime_map *map);
+
+// chttp_mime_map_add
+//   Parameters:
+//     * map        - chttp_mime_map.
+//     * suffix     - Suffix to add.
+//     * suffix_len - Length of suffix.
+//     * type       - Type to add.
+//     * type_len   - Length of type.
+//
+//   Description:
+//     Adds a new entry to the chttp_mime_map.
+void chttp_mime_map_add(chttp_mime_map *map, const char *suffix, size_t suffix_len, const char *type, size_t type_len);
+
+// chttp_mime_map_get
+//   Parameters:
+//     * map        - chttp_mime_map
+//     * suffix     - Suffix.
+//     * suffix_len - Length of suffix.
+//     * type_len   - Length of type to fill.
+//
+//   Description:
+//     Returns the type and type length of a given MIME suffix.
+//
+//   Returns:
+//     The type directly through the return signature, and the length of the
+//     type through a pointer (*type_len) passed into the function.
+const char *chttp_mime_map_get(chttp_mime_map *map, const char *suffix, size_t suffix_len, size_t *type_len);
+
+// chttp_mime_map_contains
+//   Parameters:
+//     * map        - chttp_mime_map
+//     * suffix     - Suffix.
+//     * suffix_len - Length of suffix.
+//
+//   Description:
+//     Checking if the chttp_mime_map contains a given suffix.
+//
+//   Returns:
+//     1 if the suffix exists, 0 otherwise.
+int chttp_mime_map_contains(chttp_mime_map *map, const char *suffix, size_t suffix_len);
 
 // chttp_mime_init
 //   Parameters:

@@ -160,6 +160,7 @@ static char *test_sprint_request()
     strcpy(r->body, "test body");
 
     chttp_sprint_request(r, output, len);
+
     chttp_assert("Invalid printing.", strcmp(output, "POST /test HTTP/1.1\r\n\
 Content-Type: text/html\r\n\r\n\
 test body\r\n\r\n") == 0);
@@ -242,10 +243,12 @@ static char *test_fprint_response()
 
     const int output_len = 4096;
     char output[output_len];
+    memset(output, 0, output_len);
     freopen(filename, "r", f);
     chttp_assert("Input test file is NULL.", f != NULL);
 
     fread(output, sizeof(char), output_len, f);
+
     chttp_assert("Invalid printing.", strcmp(output, "HTTP/1.1 200 OK\r\n\
 Content-Type: text/html\r\n\r\n\
 test body\r\n\r\n") == 0);
@@ -267,28 +270,55 @@ static char *test_print()
 
 ////
 // MIME
-// TODO: MIME testing.
 
-static char *test_mime_load()
+static char *test_mime_add_and_get()
 {
+    chttp_mime_map *map = chttp_mime_map_allocate();
+    chttp_mime_map_add(map, "html", 4, "text/html", 9);
+
+    size_t l;
+    const char *output = chttp_mime_map_get(map, "html", 4, &l);
+
+    chttp_assert("MIME output is NULL.", output != NULL);
+    chttp_assert("MIME output is invalid.", strncmp(output, "text/html", 9) == 0);
+
+    chttp_mime_map_free(map);
     return NULL;
 }
 
 static char *test_suffix()
 {
+    const char *input = "http://google.com/crockeo/this.is.a.test.html";
+    int input_len = strlen(input);
+
+    const char *output = chttp_uri_suffix(input, input_len);
+    chttp_assert("URI suffix is invalid.", strncmp(output, "html", 4) == 0);
+
     return NULL;
 }
 
-static char *test_mime_lookup()
+static char *test_mime_load_and_lookup()
 {
+    chttp_mime_map *map = chttp_mime_map_allocate();
+    chttp_mime_map_init(map, "www/mime_demo.types");
+
+    char *suffix = "html";
+    char output[128];
+    memset(output, 0, 128);
+    chttp_assert("Failed URI mapping.", chttp_uri_mime(map, suffix, 4, output, 128) == 0);
+
+    printf("%s\n", output);
+
+    chttp_mime_map_free(map);
+
     return NULL;
 }
 
 static char *test_mime()
 {
-    chttp_run_test(mime_load);
+    chttp_run_test(mime_add_and_get);
     chttp_run_test(suffix);
-    chttp_run_test(mime_lookup);
+    chttp_run_test(mime_load_and_lookup);
 
     return NULL;
 }
